@@ -57,6 +57,23 @@
 
     var scale = Math.min(w / DESIGN_WIDTH, h / DESIGN_HEIGHT);
     scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale));
+
+    // Real bug this fixes: `100vh` does NOT automatically compensate
+    // for a `zoom` applied higher up the tree (that was this file's
+    // original, incorrect assumption) -- `vh` always resolves against
+    // the actual physical window, not the zoomed one. So body's own
+    // `height: 100vh` (and the couple of `calc(100vh - ...)` rules
+    // elsewhere in base.css) sized themselves correctly in real
+    // pixels, and THEN got visually shrunk again by zoom on top of
+    // that -- the whole app (sidebar included, since it's a flex
+    // sibling inside that same shrunk box) rendered smaller than the
+    // actual window, leaving real, unstyled dead space below
+    // everything rather than just some page's content running short.
+    // Fix: expose the *already-scale-compensated* height/width as CSS
+    // vars, and base.css uses those instead of raw vh/vw so nothing
+    // gets shrunk twice.
+    root.style.setProperty('--app-100vh', (h / scale) + 'px');
+    root.style.setProperty('--app-100vw', (w / scale) + 'px');
     root.style.zoom = String(scale);
   }
 
