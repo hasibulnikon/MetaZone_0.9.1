@@ -15,11 +15,31 @@
    the OS/browser default -- every color here is a CSS var already
    updated by theme.js, so this repaints automatically on theme
    switch, no separate light/dark rule needed. ---- */
-::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar { width: 12px; height: 12px; }
 ::-webkit-scrollbar-track { background: var(--bg1); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; }
+::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 6px; border: 2px solid var(--bg1); }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
-* { scrollbar-width: thin; scrollbar-color: var(--border) var(--bg1); }
+* { scrollbar-width: thin; scrollbar-color: var(--accent) var(--bg1); }
+
+/* .content is the one place users land on a short/720p window with
+   more page content than fits -- an explicit bottom fade hints
+   "there's more below, scroll" instead of the cut-off looking like
+   dead/broken space (the accent-colored scrollbar above is the other
+   half of this same fix). Pointer-events:none so it never blocks
+   clicks on real content underneath it. */
+.content { position: relative; }
+.content::after {
+  content: "";
+  position: sticky;
+  display: block;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 28px;
+  margin-top: -28px;
+  background: linear-gradient(to bottom, transparent, var(--bg1));
+  pointer-events: none;
+}
 
 body {
   margin: 0;
@@ -239,6 +259,8 @@ body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 14px;
+  contain: layout style; /* Part 23: containment on the grid container itself,
+                              on top of each card's own content-visibility */
 }
 
 .empty-state { color: var(--text-dim); font-size: 13px; padding: 30px 0; text-align: center; display: none; }
@@ -254,9 +276,25 @@ body {
   position: relative;
   min-height: 176px; /* fixed base height -- set once, before content streams in */
   transition: border-color 150ms var(--ease), box-shadow 150ms var(--ease);
+  /* v0.9.x (Part 11): large-batch DOM performance. content-visibility:auto
+     tells the browser to skip layout/style/paint work entirely for cards
+     that are off-screen -- exactly the win a 500-1000 image batch needs,
+     with none of virtualization's scroll/editing-state risk, since every
+     card stays a real DOM node the whole time (Part 11 explicitly asks to
+     try low-risk options before virtualization). contain-intrinsic-size
+     gives the browser a placeholder size to reserve for off-screen cards
+     so scrolling doesn't jump once they're skipped -- matches this card's
+     own min-height, so the reserved space is accurate even before content
+     streams in. Both properties are pure progressive enhancement: browsers
+     that don't understand content-visibility ignore it and render every
+     card normally (Part 28's Windows/WebView2 + Linux/WebKitGTK
+     compatibility requirement is satisfied by that silent no-op fallback,
+     not by any extra branching code). */
+  content-visibility: auto;
+  contain-intrinsic-size: 176px;
 }
 .card:hover { border-color: var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.18); }
-.card.has-desc { min-height: 232px; } /* a bit taller only when Description is on */
+.card.has-desc { min-height: 232px; content-visibility: auto; contain-intrinsic-size: 232px; } /* a bit taller only when Description is on */
 
 /* v0.8.9: thumbnail + its own Regenerate/Delete row now share a
    column so those two actions sit directly under the image, inside
@@ -391,6 +429,10 @@ body {
 .embed-log {
   flex: 1; min-height: 0; overflow-y: auto; margin-top: 0;
   background: var(--bg1); border: 1px solid var(--border);
+  contain: layout style; /* Part 23: this now receives buffered, rAF-flushed
+                             text-node appends (see embed.js) -- containment
+                             keeps each flush's layout work scoped to this
+                             box instead of the whole page. */
 }
 
 .provider-block { border-bottom: 1px solid var(--border); padding: 14px 0; }
@@ -698,7 +740,7 @@ body {
    matching the Metadata Generator's card-grid look (see .card-grid
    above) -- each generated prompt is its own card with a word count
    in the top-right corner and its own delete button. */
-.p2p-results { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.p2p-results { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; contain: layout style; }
 .p2p-card {
   position: relative;
   background: var(--bg2);
@@ -709,6 +751,21 @@ body {
   flex-direction: column;
   gap: 8px;
   transition: border-color 150ms var(--ease), box-shadow 150ms var(--ease);
+  /* v0.9.x (Part 11): same content-visibility win as .card above, but
+     p2p-card's height varies with prompt text length (no min-height), so
+     a single fixed contain-intrinsic-size guess risks a visible scroll
+     jump once off-screen cards snap back to their real height. The plain
+     140px line is the safe fallback for browsers that only understand a
+     single-value contain-intrinsic-size; the `auto 140px` line after it
+     is silently dropped by those same browsers (invalid value = ignored,
+     prior valid declaration stands) but on browsers that DO support the
+     two-value 'auto' form, it tells the browser to remember each card's
+     actual rendered size after its first layout instead of reusing the
+     140px guess forever -- the standard progressive-enhancement override
+     pattern, not a fallback chain that needs a feature check. */
+  content-visibility: auto;
+  contain-intrinsic-size: 140px;
+  contain-intrinsic-size: auto 140px;
 }
 .p2p-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.18); }
 .p2p-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
