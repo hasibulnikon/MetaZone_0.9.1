@@ -15,31 +15,11 @@
    the OS/browser default -- every color here is a CSS var already
    updated by theme.js, so this repaints automatically on theme
    switch, no separate light/dark rule needed. ---- */
-::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: var(--bg1); }
-::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 6px; border: 2px solid var(--bg1); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
-* { scrollbar-width: thin; scrollbar-color: var(--accent) var(--bg1); }
-
-/* .content is the one place users land on a short/720p window with
-   more page content than fits -- an explicit bottom fade hints
-   "there's more below, scroll" instead of the cut-off looking like
-   dead/broken space (the accent-colored scrollbar above is the other
-   half of this same fix). Pointer-events:none so it never blocks
-   clicks on real content underneath it. */
-.content { position: relative; }
-.content::after {
-  content: "";
-  position: sticky;
-  display: block;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 28px;
-  margin-top: -28px;
-  background: linear-gradient(to bottom, transparent, var(--bg1));
-  pointer-events: none;
-}
+* { scrollbar-width: thin; scrollbar-color: var(--border) var(--bg1); }
 
 body {
   margin: 0;
@@ -47,7 +27,7 @@ body {
   background: var(--bg1);
   color: var(--text);
   overflow: hidden;
-  height: 100vh;
+  height: var(--app-100vh, 100vh);
   display: flex;
   flex-direction: column;
 }
@@ -399,7 +379,7 @@ body {
    removed from this page's UI to match the original exactly, per
    Hasib's "no exception" instruction -- concurrency now runs at a
    fixed default in the backend instead of being user-exposed here. ---- */
-.embed-page { display: grid; grid-template-columns: 1fr 340px; gap: 14px; height: calc(100vh - 52px - 28px); align-items: stretch; }
+.embed-page { display: grid; grid-template-columns: 1fr 340px; gap: 14px; height: calc(var(--app-100vh, 100vh) - 52px - 28px); align-items: stretch; }
 .embed-panel-col { min-height: 0; overflow-y: auto; }
 .embed-panel { padding: 20px; }
 .embed-step + .embed-step { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
@@ -569,7 +549,7 @@ body {
 .control-panel {
   width: 270px; flex-shrink: 0; background: var(--bg2); border: 1px solid var(--border);
   border-radius: 10px; padding: 14px; position: sticky; top: 14px;
-  height: calc(100vh - 52px - 28px - 14px);
+  height: calc(var(--app-100vh, 100vh) - 52px - 28px - 14px);
   display: flex; flex-direction: column;
   transition: width 200ms var(--ease), padding 200ms var(--ease), opacity 150ms var(--ease);
 }
