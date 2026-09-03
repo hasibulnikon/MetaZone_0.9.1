@@ -67,6 +67,24 @@
   // the number hasn't changed.
   document.addEventListener('DOMContentLoaded', applyScale);
 
+  // Bug fix: on smaller/720p-class windows, pywebview's native window
+  // is sometimes still mid-resize (settling into the smaller
+  // win_w/win_h app.py requested) at the moment this script's very
+  // first measurement runs -- window.innerWidth/innerHeight at that
+  // instant can briefly report the *pre-resize* (larger, default)
+  // size. That produces a scale that's too large for the window's
+  // real final size, and because nothing after the initial paint was
+  // guaranteed to trigger another 'resize' event on every platform,
+  // the wrong (too-large) scale could stick: the UI renders as if the
+  // effective viewport were taller than it really is, so content ends
+  // before the real bottom edge of the window and everything below it
+  // reads as empty space. These extra re-checks after load settles
+  // catch and correct that -- cheap no-ops (applyScale resets to zoom:1
+  // and recomputes) if the first measurement was already right.
+  window.addEventListener('load', applyScale);
+  setTimeout(applyScale, 200);
+  setTimeout(applyScale, 600);
+
   // Debounced: a window drag-resize fires this rapidly; only rescale
   // once movement settles rather than on every intermediate frame.
   window.addEventListener('resize', function () {
